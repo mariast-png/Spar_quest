@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Familien-Spar-Quest</title>
+<style>
+:root{--bg:#fbf7f0;--card:#fff;--tx:#2b2a33;--mut:#6b6a75;--ac:#5c8a2e;--ok:#7aa63c;--bd:#e7e0d3;--bar:#eee6d8;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1b22;--card:#27262f;--tx:#f1eee8;--mut:#a9a7b3;--ac:#5e9a3a;--ok:#9ccc65;--bd:#3a3944;--bar:#34333d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1c1b22;--card:#27262f;--tx:#f1eee8;--mut:#a9a7b3;--ac:#5e9a3a;--ok:#9ccc65;--bd:#3a3944;--bar:#34333d;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:84px}
+#app{max-width:560px;margin:0 auto;padding:12px}
+header{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:12px 14px;margin-bottom:12px}
+header b{font-size:18px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:12px}
+h2{font-size:16px;margin:0 0 10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.row>input{flex:1 1 120px}
+input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;min-width:0;width:100%}
+.chip{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:999px;padding:8px 12px;cursor:pointer}
+.chip.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.big{font:inherit;font-weight:600;width:100%;background:var(--ac);color:#fff;border:0;border-radius:12px;padding:12px;cursor:pointer}
+.ok{background:var(--ok)}
+.mut{color:var(--mut);font-size:14px;margin:4px 0}
+.bar{background:var(--bar);border-radius:999px;height:14px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--ok);border-radius:999px}
+.li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--bd)}
+.li:first-of-type{border-top:0}
+.li small{color:var(--mut)}
+.sm{font:inherit;font-size:14px;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:6px 10px;cursor:pointer}
+.sm.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+nav button{flex:1;font:inherit;font-size:13px;color:var(--mut);background:none;border:0;padding:6px 2px;cursor:pointer}
+nav button.on{color:var(--ac);font-weight:700}
+nav span{display:block;font-size:20px}
+.pl{display:flex;justify-content:space-between;padding:6px 0}
+.bdg{font-size:13px;color:var(--mut)}
+</style></head>
+<body><div id="app"></div>
+<script>
+const K='fsq1';
+let S={p:[{n:'Mama',e:'🐞'},{n:'Papa',e:'🦡'},{n:'Emma',e:'🐝'},{n:'Klara',e:'🦊'}],en:[],w:[],d:[],g:{n:'Familien-Ausflug',t:100},wage:15};
+try{const r=localStorage.getItem(K);if(r)S=Object.assign(S,JSON.parse(r))}catch(x){}
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(x){}};
+let tab='h',who=0,cat='m',rs=false,D={amt:'',note:'',wi:'',wp:'',wd:'7',dep:''};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const eur=n=>(+n||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+const num=v=>parseFloat(String(v).replace(',','.'))||0;
+const CATS={m:['Muss','🧱'],s:['Schön zu haben','🎈'],x:['Spontan','⚡']};
+const pts=i=>S.en.filter(x=>x.w==i).length+S.w.filter(x=>x.w==i&&x.st=='r').length*10+S.w.filter(x=>x.w==i&&x.st=='b').length*5+S.d.filter(x=>x.w==i).reduce((a,x)=>a+1+Math.floor(x.a/5),0);
+const pot=()=>S.d.reduce((a,x)=>a+x.a,0)+S.w.filter(x=>x.st=='r').reduce((a,x)=>a+x.p,0);
+const chips=()=>S.p.map((p,i)=>`<button class="chip ${i==who?'on':''}" data-a="who" data-v="${i}">${p.e} ${esc(p.n)}</button>`).join('');
+const prog=()=>Math.min(100,Math.round(pot()/Math.max(1,S.g.t)*100));
+
+function head(){return `<header><b>🏆 Familien-Spar-Quest</b><p class="mut">Ziel: ${esc(S.g.n)} · ${eur(pot())} von ${eur(S.g.t)}</p><div class="bar"><i style="width:${prog()}%"></i></div></header>`}
+
+function vH(){return `<section class="card"><h2>Was hast du ausgegeben?</h2><div class="row">${chips()}</div>
+<div class="row"><input data-k="amt" inputmode="decimal" placeholder="Betrag in €" value="${esc(D.amt)}"><input data-k="note" placeholder="Wofür?" value="${esc(D.note)}"></div>
+<div class="row">${Object.entries(CATS).map(([k,v])=>`<button class="chip ${k==cat?'on':''}" data-a="cat" data-v="${k}">${v[1]} ${v[0]}</button>`).join('')}</div>
+<button class="big" data-a="addEn">Eintragen · +1 Punkt für Ehrlichkeit</button>
+<p class="mut">Kein Urteil beim Eintragen. Nachher fragen wir: War es das wert?</p></section>
+<section class="card"><h2>Zuletzt</h2>${S.en.slice(0,8).map((x,i)=>`<div class="li"><span>${S.p[x.w]?S.p[x.w].e:''} ${esc(x.n||'–')}<br><small>${CATS[x.c][1]} ${CATS[x.c][0]} · ${eur(x.a)}</small></span><button class="sm ${x.r?'on':''}" data-a="reg" data-v="${i}">😬 bereut</button></div>`).join('')||'<p class="mut">Noch nichts eingetragen. Der erste Eintrag zählt!</p>'}</section>`}
+
+function vW(){const now=Date.now();
+return `<section class="card"><h2>Wunschliste mit Wartezeit</h2><div class="row">${chips()}</div>
+<div class="row"><input data-k="wi" placeholder="Was wünschst du dir?" value="${esc(D.wi)}"><input data-k="wp" inputmode="decimal" placeholder="Preis in €" value="${esc(D.wp)}"><input data-k="wd" inputmode="numeric" placeholder="Tage warten" value="${esc(D.wd)}"></div>
+<button class="big" data-a="addW">Auf die Wunschliste</button>
+<p class="mut">Richtwert: 7 Tage Wartezeit, ab 50 € lieber 30 Tage. Wenn sich der Wunsch erledigt, wandert der Preis in den Topf (+10 Punkte).</p></section>
+<section class="card"><h2>Aktive Wünsche</h2>${S.w.map((x,i)=>x.st!='o'?'':(x.u>now?`<div class="li"><span>${S.p[x.w].e} ${esc(x.i)}<br><small>${eur(x.p)} · entspricht ${(x.p/Math.max(1,S.wage)).toLocaleString('de-DE',{maximumFractionDigits:1})} Std. Arbeit · ⏳ noch ${Math.ceil((x.u-now)/864e5)} Tg.</small></span></div>`:`<div class="li"><span>${S.p[x.w].e} ${esc(x.i)}<br><small>${eur(x.p)} · Wartezeit vorbei</small></span><span><button class="sm" data-a="rel" data-v="${i}">🎉 erledigt</button> <button class="sm" data-a="buy" data-v="${i}">Kaufen</button></span></div>`)).join('')||'<p class="mut">Keine offenen Wünsche.</p>'}</section>`}
+
+function vT(){const p=prog();
+return `<section class="card"><h2>Gemeinsamer Topf</h2><div class="row"><input data-s="gn" value="${esc(S.g.n)}"><input data-s="gt" inputmode="decimal" value="${S.g.t}"></div>
+<div class="bar"><i style="width:${p}%"></i></div><p class="mut">${eur(pot())} gespart · ${p}%</p>${p>=100?'<p><b>🎉 Geschafft! Zeit für den gemeinsamen Ausflug!</b></p>':''}</section>
+<section class="card"><h2>Etwas einzahlen</h2><div class="row">${chips()}</div><div class="row"><input data-k="dep" inputmode="decimal" placeholder="Betrag in €" value="${esc(D.dep)}"></div>
+<button class="big ok" data-a="dep">In den Topf · Punkte für dich</button></section>`}
+
+function vS(){const T=S.en.reduce((a,x)=>a+x.a,0),by={m:0,s:0,x:0};S.en.forEach(x=>by[x.c]+=x.a);
+const reg=S.en.filter(x=>x.r).reduce((a,x)=>a+x.a,0);
+const bd=i=>[S.en.filter(x=>x.w==i).length>=10?'✍️ Ehrlich':'',S.w.filter(x=>x.w==i&&x.st=='r').length>=3?'🧘 Wartemeister':'',S.d.filter(x=>x.w==i).reduce((a,x)=>a+x.a,0)>=20?'🏦 Topf-Held':''].filter(Boolean).join(' · ');
+const order=S.p.map((p,i)=>i).sort((a,b)=>pts(b)-pts(a));
+return `<section class="card"><h2>Punktestand</h2>${order.map(i=>`<div class="pl"><span>${S.p[i].e} ${esc(S.p[i].n)}<br><span class="bdg">${bd(i)||'Noch keine Abzeichen'}</span></span><b>${pts(i)} P.</b></div>`).join('')}
+<p class="mut">Abzeichen: 10 Einträge, 3 losgelassene Wünsche, 20 € im Topf.</p></section>
+<section class="card"><h2>Wofür geht das Geld drauf?</h2>${Object.entries(CATS).map(([k,v])=>`<div class="pl"><span>${v[1]} ${v[0]}</span><span>${eur(by[k])}</span></div><div class="bar"><i style="width:${T?Math.round(by[k]/T*100):0}%;background:var(--ac)"></i></div>`).join('')}
+<p class="mut">Insgesamt ${eur(T)}. Davon später bereut: ${eur(reg)}.</p></section>
+<section class="card"><h2>Einstellungen</h2><div class="row">${S.p.map((p,i)=>`<input data-s="n" data-v="${i}" value="${esc(p.n)}">`).join('')}</div>
+<div class="row"><input data-s="wage" inputmode="decimal" value="${S.wage}" aria-label="Stundenlohn"></div><p class="mut">Stundenlohn (netto, in €) für die Umrechnung in Arbeitszeit.</p>
+<button class="sm" data-a="reset">${rs?'Wirklich alles löschen? Nochmal tippen':'Alles zurücksetzen'}</button></section>`}
+
+function nav(){return `<nav>${[['h','✍️','Heute'],['w','⏳','Wünsche'],['t','🏦','Topf'],['s','📊','Team']].map(([k,i,l])=>`<button class="${tab==k?'on':''}" data-a="tab" data-v="${k}"><span>${i}</span>${l}</button>`).join('')}</nav>`}
+
+function render(){$('#app').innerHTML=head()+({h:vH,w:vW,t:vT,s:vS})[tab]()+nav()}
+
+document.addEventListener('input',e=>{const k=e.target.dataset.k;if(k)D[k]=e.target.value});
+document.addEventListener('change',e=>{const s=e.target.dataset.s,v=e.target.value;if(!s)return;
+if(s=='gn')S.g.n=v;if(s=='gt')S.g.t=num(v)||100;if(s=='wage')S.wage=num(v)||15;if(s=='n')S.p[+e.target.dataset.v].n=v;save();render()});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,v=b.dataset.v;
+if(a=='tab'){tab=v;rs=false}
+if(a=='who')who=+v;
+if(a=='cat')cat=v;
+if(a=='addEn'){const m=num(D.amt);if(m<=0)return;S.en.unshift({w:who,a:m,c:cat,n:D.note,r:0,t:Date.now()});D.amt=D.note=''}
+if(a=='reg')S.en[+v].r=S.en[+v].r?0:1;
+if(a=='addW'){const p=num(D.wp);if(!D.wi.trim()||p<=0)return;S.w.unshift({w:who,i:D.wi.trim(),p:p,u:Date.now()+(parseInt(D.wd)||7)*864e5,st:'o'});D.wi=D.wp='';D.wd='7'}
+if(a=='rel')S.w[+v].st='r';
+if(a=='buy')S.w[+v].st='b';
+if(a=='dep'){const m=num(D.dep);if(m<=0)return;S.d.unshift({w:who,a:m});D.dep=''}
+if(a=='reset'){if(!rs){rs=true}else{S.en=[];S.w=[];S.d=[];rs=false}}
+save();render()});
+render();
+</script></body></html>
